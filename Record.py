@@ -19,6 +19,23 @@ BUTTON2_GPIO = 2
 BUTTON3_GPIO = 3
 RECORD_GPIO = 4
 
+
+def open_audio():
+    audio = pyaudio.PyAudio()  # create pyaudio instantiation
+    stream = audio.open(format=form_1, rate=samp_rate, channels=chans,
+                        input_device_index=dev_index, input=True,
+                        frames_per_buffer=chunk)
+    print("recording")
+    return audio, stream
+
+
+def close_audio(audio, stream):
+    # stop the stream, close it, and terminate the pyaudio instantiation
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+
+
 class Buttons:
     def __init__(self, gpio, filename):
         self.gpio = gpio
@@ -26,13 +43,7 @@ class Buttons:
         self.button = gpiozero.Button(gpio)
 
     def record(self):
-        audio = pyaudio.PyAudio()  # create pyaudio instantiation
-
-        # create pyaudio stream
-        stream = audio.open(format=form_1, rate=samp_rate, channels=chans, \
-                            input_device_index=dev_index, input=True, \
-                            frames_per_buffer=chunk)
-        print("recording")
+        audio, stream = open_audio()
         frames = []
 
         # loop through stream and append audio chunks to frame array
@@ -42,10 +53,7 @@ class Buttons:
             frames.append(data)
         print("finished recording")
 
-        # stop the stream, close it, and terminate the pyaudio instantiation
-        stream.stop_stream()
-        stream.close()
-        audio.terminate()
+        close_audio(audio, stream)
         self.save_file(audio, frames)
 
     def save_file(self, audio, frames):
@@ -104,6 +112,18 @@ def handle_button_press(pressed_gpio):
         pressed_button.play_file()
 
 
+def initialize_usb_device():
+    try:
+        audio, stream = open_audio()
+        close_audio(audio, stream)
+    except OSError:
+        print("Caught OSError exception, continue...")
+
+
 if __name__ == '__main__':
+    initialize_usb_device()
     while True:
-        wait_button()
+        try:
+            wait_button()
+        except OSError:
+            print("Caught OSError exception, trying again")
