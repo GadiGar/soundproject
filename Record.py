@@ -6,6 +6,7 @@ import os
 import sys
 import queue
 
+
 form_1 = pyaudio.paInt16  # 16-bit resolution
 chans = 1  # 1 channel
 samp_rate = 48000  # default value for the fifine mic
@@ -17,7 +18,11 @@ wav_output_filename = '/home/pi/sound_project/test1.wav'  # name of .wav file
 BUTTON1_GPIO = 1
 BUTTON2_GPIO = 2
 BUTTON3_GPIO = 3
-RECORD_GPIO = 4
+BUTTON4_GPIO = 4
+GPIO_LIST = [BUTTON1_GPIO, BUTTON2_GPIO, BUTTON3_GPIO, BUTTON4_GPIO]
+INVALID_BUTTON = -1
+
+RECORD_GPIO = 5
 
 
 def open_audio():
@@ -71,9 +76,10 @@ class Buttons:
         print("Done")
 
 
-button1 = Buttons(BUTTON1_GPIO, '/home/pi/sound_project/button1.wav')
-button2 = Buttons(BUTTON2_GPIO, '/home/pi/sound_project/button2.wav')
-button3 = Buttons(BUTTON3_GPIO, '/home/pi/sound_project/button3.wav')
+buttons = []
+for i in range(len(GPIO_LIST)):
+    buttons.append(Buttons(GPIO_LIST[i], "/home/pi/sound_project/button"+str(i)+".wav"))
+
 record_button = Buttons(RECORD_GPIO, '/home/pi/sound_project/dummy.wav')
 
 
@@ -81,28 +87,26 @@ def wait_button():
 
     button_queue = queue.Queue()
 
-    button1.button.when_pressed = button_queue.put
-    button2.button.when_pressed = button_queue.put
-    button3.button.when_pressed = button_queue.put
+    for button in buttons:
+        button.button.when_pressed = button_queue.put
 
     queue_event = button_queue.get()
-    pressed_button = queue_event.pin.number
+    pressed_gpio = queue_event.pin.number
 
-    handle_button_press(pressed_button)
+    handle_button_press(pressed_gpio)
+
+
+def get_button(gpio):
+    for button in buttons:
+        if button.gpio == gpio:
+            return button
+    return INVALID_BUTTON
 
 
 def handle_button_press(pressed_gpio):
     print("Detected button press on GPIO {0}".format(pressed_gpio))
-
-    def get_button(gpio):
-        return {
-            BUTTON1_GPIO: button1,
-            BUTTON2_GPIO: button2,
-            BUTTON3_GPIO: button3,
-        }.get(gpio, 0)
-
     pressed_button = get_button(pressed_gpio)
-    if pressed_button == 0:
+    if pressed_button == INVALID_BUTTON:
         print("Unexpected button press detected")
         return
 
