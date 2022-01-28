@@ -71,14 +71,14 @@ class Buttons:
         wavefile.close()
 
     def play_file(self):
-        print("Replaying")
-        os.system("omxplayer -o local " + self.filename)
+        print(f"Replaying file {self.filename}")
+        os.system(f"omxplayer -o local --vol 1000 {self.filename}")
         print("Done")
 
 
 buttons = []
 for i in range(len(GPIO_LIST)):
-    buttons.append(Buttons(GPIO_LIST[i], "/home/pi/sound_project/button"+str(i)+".wav"))
+    buttons.append(Buttons(GPIO_LIST[i], "/home/pi/sound_project/button"+str(i+1)+".wav"))
 
 record_button = Buttons(RECORD_GPIO, '/home/pi/sound_project/dummy.wav')
 
